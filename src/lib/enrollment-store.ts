@@ -1,56 +1,57 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 import {
   students as initialStudents,
   courses as initialCourses,
-  enrollments as initialEnrollments,
+  CURRENT_STUDENT_ID,
 } from "@/lib/mock-data";
-import type { Course, Enrollment, Student } from "@/lib/types";
+import type { Course, Student } from "@/lib/types";
 
 type EnrollmentStore = {
   students: Student[];
   courses: Course[];
-  enrollments: Enrollment[];
-  /** Admin ลงทะเบียนวิชาให้นักศึกษาคนใดก็ได้ (ไม่ซ้ำกับที่มีอยู่แล้ว) */
-  enroll: (studentId: string, courseId: string) => void;
-  /** Admin ยกเลิกการลงทะเบียนของนักศึกษาคนใดก็ได้ */
-  drop: (studentId: string, courseId: string) => void;
-  /** ลบนักศึกษา พร้อมการลงทะเบียนทั้งหมดของคนนั้น */
+  /** เซ็ตรายชื่อนักศึกษาทั้งหมดใหม่ */
+  setStudents: (students: Student[]) => void;
+  /** เซ็ตรายวิชาทั้งหมดใหม่ */
+  setCourses: (courses: Course[]) => void;
+  /** ลบนักศึกษา */
   removeStudent: (studentId: string) => void;
-  /** ลบวิชาออกจากรายวิชาที่เปิดสอน พร้อม cascade ลบ enrollment ที่อ้างถึงวิชานั้นทั้งหมด */
-  removeCourse: (courseId: string) => void;
+  /** ลบวิชาออกจากรายวิชาที่เปิดสอน พร้อม cascade ลบออกจาก enrolledCourses ของนักศึกษาทุกคนที่ลงวิชานั้น */
+  removeCourse: (courseCode: string) => void;
 };
 
-export const useEnrollmentStore = create<EnrollmentStore>((set) => ({
-  students: initialStudents,
-  courses: initialCourses,
-  enrollments: initialEnrollments,
+export const useEnrollmentStore = create<EnrollmentStore>()(
+  persist(
+    (set) => ({
+      students: initialStudents,
+      courses: initialCourses,
 
-  enroll: (studentId, courseId) =>
-    set((state) => ({
-      enrollments: state.enrollments.some(
-        (e) => e.studentId === studentId && e.courseId === courseId,
-      )
-        ? state.enrollments
-        : [...state.enrollments, { studentId, courseId }],
-    })),
+      setStudents: (students) => set({ students }),
+      setCourses: (courses) => set({ courses }),
 
-  drop: (studentId, courseId) =>
-    set((state) => ({
-      enrollments: state.enrollments.filter(
-        (e) => !(e.studentId === studentId && e.courseId === courseId),
-      ),
-    })),
+      removeStudent: (studentId) =>
+        set((state) => ({
+          students: state.students.filter((s) => s.studentId !== studentId),
+        })),
 
-  removeStudent: (studentId) =>
-    set((state) => ({
-      students: state.students.filter((s) => s.studentId !== studentId),
-      enrollments: state.enrollments.filter((e) => e.studentId !== studentId),
-    })),
-
-  removeCourse: (courseId) =>
-    set((state) => ({
-      courses: state.courses.filter((c) => c.courseId !== courseId),
-      enrollments: state.enrollments.filter((e) => e.courseId !== courseId),
-    })),
-}));
+      removeCourse: (courseCode) =>
+        set((state) => ({
+          courses: state.courses.filter((c) => c.courseCode !== courseCode),
+          students: state.students.map((s) => ({
+            ...s,
+            enrolledCourses: s.enrolledCourses.filter((c) => c !== courseCode),
+          })),
+        })),
+    }),
+    {
+      name: `lab16-2569-${CURRENT_STUDENT_ID}`, // key รูปแบบ lab16-2569-รหัสนศ.
+      storage: createJSONStorage(() => localStorage),
+      // เก็บเฉพาะ students กับ courses ลง Local Storage (ไม่เก็บ action functions)
+      partialize: (state) => ({
+        students: state.students,
+        courses: state.courses,
+      }),
+    },
+  ),
+);

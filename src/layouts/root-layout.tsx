@@ -19,7 +19,7 @@ export default function RootLayout() {
           <div className="flex items-center gap-2">
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-4" />
-            <span className="text-sm font-medium">ระบบลงทะเบียนเรียน</span>
+            <span className="text-base font-medium">จัดการวิชาเรียนและสถานะนักศึกษา</span>
           </div>
           <ModeToggle />
         </header>

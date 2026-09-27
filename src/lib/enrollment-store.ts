@@ -21,6 +21,7 @@ type EnrollmentStore = {
   removeCourse: (courseCode: string) => void;
 };
 
+
 export const useEnrollmentStore = create<EnrollmentStore>()(
   persist(
     (set) => ({

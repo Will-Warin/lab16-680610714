@@ -41,6 +41,13 @@ import {
 } from "@/components/ui/table";
 import { useEnrollmentStore } from "@/lib/enrollment-store";
 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+
 type Option = { value: string; label: string };
 
 function OptionSelect({
@@ -147,6 +154,26 @@ export default function AdminEnrollmentsPage() {
     return s ? `${s.firstName} ${s.lastName}` : "-";
   };
 
+  const [mode, setMode] = useState<"course" | "student">("course");
+  const [filterCourse, setFilterCourse] = useState("all");
+  const [filterStudent, setFilterStudent] = useState("all");
+
+  const studentOptions: Option[] = students.map((s) => ({
+  value: s.studentId,
+  label: `${s.studentId} — ${s.firstName} ${s.lastName}`,
+  }));
+
+  // filter รายวิชาตามโหมดค้นหา
+  const filteredCourses = courses.filter((c) => {
+  if (mode === "course") {
+    return filterCourse === "all" || c.courseCode === filterCourse;
+  }
+  // mode === "student": โชว์เฉพาะวิชาที่นักศึกษาคนที่เลือกลงทะเบียนอยู่
+  if (filterStudent === "all") return true;
+  const student = students.find((s) => s.studentId === filterStudent);
+  return student?.enrolledCourses.includes(c.courseCode) ?? false;
+});
+
   return (
     <div className="space-y-4">
       <div>
@@ -232,6 +259,29 @@ export default function AdminEnrollmentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        
+        <Tabs value={mode} onValueChange={(v) => setMode(v as "course" | "student")}>
+         <TabsList>
+            <TabsTrigger value="course">ค้นหาตามวิชา</TabsTrigger>
+            <TabsTrigger value="student">ค้นหาตามนักศึกษา</TabsTrigger>
+          </TabsList>
+          <TabsContent value="course" className="pt-2">
+            <OptionSelect
+              id="filterCourse"
+              options={[{ value: "all", label: "ทุกวิชา" }, ...courseOptions]}
+              value={filterCourse}
+              onChange={setFilterCourse}
+            />
+          </TabsContent>
+          <TabsContent value="student" className="pt-2">
+            <OptionSelect
+              id="filterStudent"
+              options={[{ value: "all", label: "ทุกคน" }, ...studentOptions]}
+              value={filterStudent}
+              onChange={setFilterStudent}
+            />
+          </TabsContent>
+        </Tabs>
 
       <div className="rounded-lg border">
         <Table>
@@ -244,7 +294,7 @@ export default function AdminEnrollmentsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {courses.length === 0 && (
+            {filteredCourses.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={4}
@@ -254,7 +304,7 @@ export default function AdminEnrollmentsPage() {
                 </TableCell>
               </TableRow>
             )}
-            {courses.map((c) => {
+            {filteredCourses.map((c) => {
               const enrolledStudents = students.filter((s) =>
                 s.enrolledCourses.includes(c.courseCode),
               );
@@ -276,7 +326,7 @@ export default function AdminEnrollmentsPage() {
                           <Badge
                             key={s.studentId}
                             variant="secondary"
-                            className="gap-1"
+                            className="gap-1 border-blue-400 bg-blue-50 text-blue-700"
                           >
                             {s.firstName} {s.lastName}
                             <button

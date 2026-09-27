@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { PlusCircle, Trash2 } from "lucide-react";
 
 import {
@@ -20,7 +20,7 @@ import {
   ComboboxChips,
   ComboboxChipsInput,
   ComboboxContent,
-  ComboboxEmpty,
+  // ComboboxEmpty,
   ComboboxItem,
   ComboboxList,
   ComboboxValue,
@@ -57,6 +57,7 @@ export default function AdminCoursesPage() {
   const [courseTitle, setCourseTitle] = useState("");
   const [instructors, setInstructors] = useState<string[]>([]);
   const [instructorQuery, setInstructorQuery] = useState("");
+  const suppressNextQueryChange = useRef(false);
 
   // รวมชื่อผู้สอนที่มีอยู่แล้วในทุกวิชา ไม่ซ้ำกัน
   const allInstructors = Array.from(
@@ -73,8 +74,7 @@ export default function AdminCoursesPage() {
 
   // ตัวเลือกที่ยังไม่ถูกเลือกในฟอร์มนี้ + ตัวเลือก "+ เพิ่มผู้สอน" ถ้าพิมพ์ชื่อใหม่
   const instructorItems: string[] = [
-    ...allInstructors.filter((name) => !instructors.includes(name)),
-    ...(canCreateInstructor ? [`${CREATE_PREFIX}${trimmedQuery}`] : []),
+    ...allInstructors, ...(canCreateInstructor ? [`${CREATE_PREFIX}${trimmedQuery}`] : []) //...allInstructors.filter((name) => !instructors.includes(name))
   ];
 
   const handleInstructorValueChange = (next: string[]) => {
@@ -89,6 +89,7 @@ export default function AdminCoursesPage() {
       setInstructors(next);
     }
     setInstructorQuery("");
+    suppressNextQueryChange.current = true; // เพิ่มบรรทัดนี้
   };
 
   const isDuplicateCode =
@@ -153,7 +154,7 @@ export default function AdminCoursesPage() {
         <div>
           <h1 className="text-xl font-semibold">จัดการวิชาเรียน</h1>
           <p className="text-sm text-muted-foreground">
-            {courses.length} วิชา — เพิ่ม/แก้ไข/ลบรายวิชาของหลักสูตรให้นักศึกษาลงทะเบียนได้ที่นี่
+            {courses.length} วิชา — เพิ่มวิชาใหม่ที่นี่แล้วจะไปโผล่เป็นตัวเลือก ตอนลงทะเบียนให้นักศึกษาที่หน้า "จัดการการลงทะเบียน" ทันที
           </p>
         </div>
 
@@ -175,6 +176,7 @@ export default function AdminCoursesPage() {
                 <Label htmlFor="courseCode">รหัสวิชา</Label>
                 <Input
                   id="courseCode"
+                  placeholder="เช่น CPE303"
                   value={courseCode}
                   onChange={(e) => setCourseCode(e.target.value)}
                   aria-invalid={isDuplicateCode}
@@ -194,9 +196,11 @@ export default function AdminCoursesPage() {
                 <Label htmlFor="courseTitle">ชื่อวิชา</Label>
                 <Input
                   id="courseTitle"
+                  placeholder="เช่น วิชาป้องกันตัวจากศาสตร์มืด"
                   value={courseTitle}
                   onChange={(e) => setCourseTitle(e.target.value)}
                 />
+    
               </div>
 
               <div className="grid gap-1.5">
@@ -207,7 +211,13 @@ export default function AdminCoursesPage() {
                   value={instructors}
                   onValueChange={handleInstructorValueChange}
                   inputValue={instructorQuery}
-                  onInputValueChange={setInstructorQuery}
+                  onInputValueChange={(value) => {
+                    if (suppressNextQueryChange.current) {
+                      setInstructorQuery(""); // บังคับว่างซ้ำ ไม่ว่า lib จะยิงมากี่ครั้งก็ตาม
+                      return;
+                    }
+                    setInstructorQuery(value);
+                  }}
                 >
                   <ComboboxChips>
                     <ComboboxValue>
@@ -215,10 +225,19 @@ export default function AdminCoursesPage() {
                         <ComboboxChip key={name}>{name}</ComboboxChip>
                       ))}
                     </ComboboxValue>
-                    <ComboboxChipsInput placeholder="เลือกหรือพิมพ์ชื่อผู้สอน" />
+                    <ComboboxChipsInput
+                      placeholder={
+                        instructors.length === 0
+                          ? "เลือกหรือพิมพ์ชื่อผู้สอน(ได้หลายคน)"
+                          : ""
+                      }
+                      onKeyDown={() => {
+                        suppressNextQueryChange.current = false;
+                      }}
+                    />
                   </ComboboxChips>
                   <ComboboxContent>
-                    <ComboboxEmpty>ไม่พบผู้สอน</ComboboxEmpty>
+                    
                     <ComboboxList>
                       {(item) => (
                         <ComboboxItem key={item} value={item}>
@@ -273,9 +292,9 @@ export default function AdminCoursesPage() {
                       <span className="text-sm text-muted-foreground">
                         ยังไม่มีผู้สอน
                       </span>
-                    ) : (
-                      c.instructors.map((name) => (
-                        <Badge key={name} variant="secondary" className="gap-1">
+                    ) : ( //เปลี่ยนสีกรอบชื่อ
+                      c.instructors.map((name) => ( 
+                        <Badge key={name} variant="secondary" className="gap-1 border-blue-400 bg-blue-50 text-blue-700">
                           {name}
                           <button
                             type="button"

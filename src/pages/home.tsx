@@ -1,6 +1,6 @@
-import { Link } from "react-router";
+// import { Link } from "react-router";
 
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function HomePage() {
@@ -8,12 +8,14 @@ export default function HomePage() {
     <div className="mx-auto max-w-xl space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>ระบบลงทะเบียนเรียน CPE & ISNE</CardTitle>
+          <CardTitle>
+            <span className="text-xl font-bold">ระบบจัดการวิชาเรียนและสถานะนักศึกษา</span>
+            </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button render={<Link to="/admin/enrollments" />}>
+          {/* <Button render={<Link to="/admin/enrollments" />}>
             ไปหน้าจัดการการลงทะเบียน
-          </Button>
+          </Button> */}
         </CardContent>
       </Card>
     </div>

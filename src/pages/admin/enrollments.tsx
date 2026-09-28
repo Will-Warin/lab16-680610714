@@ -229,7 +229,11 @@ export default function AdminEnrollmentsPage() {
                   </ComboboxValue>
                   <ComboboxChipsInput
                     placeholder={
-                      formCourse ? "เลือกนักศึกษา" : "เลือกวิชาก่อน"
+                      formStudentIds.length > 0
+                        ? ""
+                        : formCourse
+                          ? "เลือกนักศึกษา"
+                          : "เลือกวิชาก่อน"
                     }
                   />
                 </ComboboxChips>
